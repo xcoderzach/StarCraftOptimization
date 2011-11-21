@@ -63,17 +63,18 @@
     ["scv", "refinery", "supply-depot"] constructions-map)) 
 
 (defn get-allowed-constructions [current-buildings-count]
-  (let [buildings-count (reduce (fn [memo unit] (if (not (nil? (get memo unit))) 
+  (let [buildings-count (reduce (fn [memo unit] 
+                          (if (not (nil? (get memo unit))) 
                             (assoc memo unit (+ 1 (get memo unit)))
                             (assoc memo unit 1))) {} current-buildings-count)] 
-  (reduce (fn [memo building] 
-            (let [name (first building) count (last building) num-allowed (get buildings-count name)]
-              (assoc memo name (if (nil? num-allowed) count (- count num-allowed)))))
-    {} num-allowed-constructions)))
+    (reduce (fn [memo building] 
+              (let [unit-name (first building) unit-count (last building) num-allowed (get buildings-count (first building))]
+                (assoc memo unit-name (if (nil? num-allowed) unit-count (- unit-count num-allowed)))))
+      {} num-allowed-constructions)))
 
 (defn get-construction-options [completed building]
   (let [available (get-available-constructions completed)
-        available-counts (get-allowed-constructions (conj (vals building) completed))]
+        available-counts (get-allowed-constructions (concat (vals building) (seq completed)))]
     (filter (fn [x] 
               (and (contains-string? available (first x)) (not= 0 (last x)))) available-counts)))
 
