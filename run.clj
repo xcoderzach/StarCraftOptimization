@@ -1,10 +1,11 @@
 (def constructions-map 
   {["supply-depot"]             "barracks"
-   ["refinery", "barracks"]     "factory"
    ["barracks"]                 "tech-lab"
+   ["refinery", "barracks"]     "factory"
    ["factory"]                  "starport"
    ["starport"]                 "banshee"
-   ["starport" "tech-lab"]      "cloaking" })
+   ["starport" "tech-lab"]      "cloaking" 
+   })
 
 (def num-allowed-constructions 
   {"scv"           16
@@ -15,7 +16,8 @@
    "starport"      1
    "tech-lab"      1
    "cloaking"      1
-   "banshee"       1})
+   "banshee"       1
+   })
 
 (def unit-mineral-costs
   {"scv"           50
@@ -26,7 +28,8 @@
    "starport"      150
    "tech-lab"      50
    "cloaking"      200
-   "banshee"       150}) 
+   "banshee"       150
+   }) 
 
 (def unit-gas-costs
   {"scv"           0
@@ -37,15 +40,16 @@
    "starport"      50
    "tech-lab"      25
    "cloaking"      200
-   "banshee"       125})
+   "banshee"       125
+   })
 
 (def unit-resource-modifiers 
-  { "scv"          {:mineral 50   :gas 0    :mineral-collectors 0 :gas-collectors 0  :num-allowed 5 :requirements []                       :build-time 17  }
-    "refinery"     {:mineral 75   :gas 0    :mineral-collectors 1 :gas-collectors 1  :num-allowed 2  :requirements []                       :build-time 30  }
-    "supply-depot" {:mineral 100  :gas 0    :mineral-collectors 1 :gas-collectors 0  :num-allowed 1  :requirements []                       :build-time 30  }
-    "barracks"     {:mineral 150  :gas 50   :mineral-collectors 1 :gas-collectors 0  :num-allowed 1  :requirements ["supply-depot"]         :build-time 65  }
-    "factory"      {:mineral 150  :gas 50   :mineral-collectors 1 :gas-collectors 0  :num-allowed 1  :requirements ["refinery", "barracks"] :build-time 60  }
-    "starport"     {:mineral 150  :gas 50   :mineral-collectors 1 :gas-collectors 0  :num-allowed 1  :requirements ["factory"]              :build-time 50  }
+  { "scv"          {:mineral 50   :gas 0    :mineral-collectors 0 :gas-collectors 0  :num-allowed 10 :requirements []                        :build-time 17  }
+    "refinery"     {:mineral 75   :gas 0    :mineral-collectors 1 :gas-collectors 1  :num-allowed 2  :requirements []                       :build-time 32  }
+    "supply-depot" {:mineral 100  :gas 0    :mineral-collectors 1 :gas-collectors 0  :num-allowed 1  :requirements []                       :build-time 33  }
+    "barracks"     {:mineral 150  :gas 50   :mineral-collectors 1 :gas-collectors 0  :num-allowed 1  :requirements ["supply-depot"]         :build-time 68  }
+    "factory"      {:mineral 150  :gas 50   :mineral-collectors 1 :gas-collectors 0  :num-allowed 1  :requirements ["refinery", "barracks"] :build-time 63  }
+    "starport"     {:mineral 150  :gas 50   :mineral-collectors 1 :gas-collectors 0  :num-allowed 1  :requirements ["factory"]              :build-time 53  }
     "tech-lab"     {:mineral 50   :gas 25   :mineral-collectors 0 :gas-collectors 0  :num-allowed 1  :requirements ["barracks"]             :build-time 25  }
     "cloaking"     {:mineral 200  :gas 200  :mineral-collectors 0 :gas-collectors 0  :num-allowed 1  :requirements ["starport" "tech-lab"]  :build-time 110 }
     "banshee"      {:mineral 150  :gas 125  :mineral-collectors 0 :gas-collectors 0  :num-allowed 1  :requirements ["starport" "tech-lab"]  :build-time 60  }})
@@ -63,7 +67,7 @@
   (reduce (fn [memo unit] 
     (let [unit-name (first unit) unit-count (last unit) minus-unit-count (target (first unit))]
       (if (not (nil? (get target unit-name)))
-        (assoc memo unit-name (- unit-count minus-unit-count))
+        (if (> (- unit-count minus-unit-count) 0) (assoc memo unit-name (- unit-count minus-unit-count)))
         (assoc memo unit-name unit-count))))
     {} source))
  
@@ -73,7 +77,7 @@
       (if (reduce (fn [memo req] (and memo (contains-string? owned-buildings req))) true required-building)
         (conj prev allowed-building)
         prev)))
-    ["scv", "refinery", "supply-depot"] constructions-map)) 
+    ["scv", "refinery", "supply-depot"] constructions-map))
 
 (defn get-allowed-constructions [current-buildings-count]
   (let [buildings-count (count-occurences current-buildings-count)]
@@ -84,9 +88,10 @@
 
 
 (defn get-construction-options [completed building]
-  (let [completed-count (count-occurences completed) building-count (count-occurences building)]
+  (let [completed-count (count-occurences completed) building-count (count-occurences (vals building))]
     (let [available (get-available-constructions (keys (diff-occurences completed-count building-count)))
-          available-counts (get-allowed-constructions (concat (vals building) (seq completed)))]
+          available-counts (get-allowed-constructions (seq completed))]
+
       (filter (fn [x] 
                 (and (contains-string? available (first x)) (> (last x) 0))) available-counts))))
 
@@ -110,7 +115,7 @@
 (defn update-resources-end [resources unit time-range]
   {:mineral (+ (get resources :mineral) (* time-range 0.7 (get resources :mineral-collectors)))
    :gas (+ (get resources :gas) (* time-range 0.6333 (get resources :gas-collectors)))
-   :mineral-collectors (- (+ (get resources :mineral-collectors) (get (get unit-resource-modifiers unit) :mineral-collectors)) (get (get unit-resource-modifiers unit) :gas-collectors))
+   :mineral-collectors (+ (if (= unit "scv") 1 0) (- (+ (get resources :mineral-collectors) (get (get unit-resource-modifiers unit) :mineral-collectors)) (get (get unit-resource-modifiers unit) :gas-collectors)))
    :gas-collectors (+ (get resources :gas-collectors) (get (get unit-resource-modifiers unit) :gas-collectors))})
 
 (defn update-resources-start [resources unit time-range]
@@ -119,35 +124,66 @@
    :mineral-collectors (- (get resources :mineral-collectors) (get (get unit-resource-modifiers unit) :mineral-collectors))
    :gas-collectors (get resources :gas-collectors)})
 
+(defn update-resources-refinery-hack [resources unit time-range extra]
+  (let [extra-gassers (min (- (get resources :mineral-collectors) 1) extra)]
+    {:mineral (+ (get resources :mineral) (* time-range 0.7 (get resources :mineral-collectors)))
+     :gas (+ (get resources :gas) (* time-range 0.6333 (get resources :gas-collectors)))
+     :mineral-collectors (- (+ (get resources :mineral-collectors) (get (get unit-resource-modifiers unit) :mineral-collectors)) extra-gassers)
+     :gas-collectors (+ (get resources :gas-collectors) extra-gassers)}))
 
 (def best-time 100000)
 (def best-build-order '())
 (def solutions 0)
-(defn before-nodes [resource-state production-queue build-order current-time]
+(defn before-nodes [resource-state production-queue build-order current-time annotated-build-order]
+  (comment (if (= (last (first production-queue)) "banshee")
+    (println "derpderp" (keys (get-construction-options build-order production-queue)))))
   (if (and (contains-string? build-order "banshee") (contains-string? build-order "cloaking"))
-    (let [] 
+    (let [final-time (reduce (fn [end-time building]
+          (if (or (= (last building) "banshee") (= (last building) "cloaking")) 
+            (max (first building) end-time)
+            end-time)) current-time production-queue)]
       (def solutions (+ 1 solutions))
-      (if (= (mod solutions 1000) 0) (println solutions))
-      (if (< current-time best-time)
+      (if (= (mod solutions 1000000) 0) (println solutions))
+      (if (< final-time best-time)
         (let [] 
-          (def best-time current-time)
+          (def best-time final-time)
           (def best-build-order build-order)
           (println "\n=================")
-          (println build-order current-time)
+          (println annotated-build-order)
+          (println "\n")
+          (println build-order final-time)
+          (println "\n")
+          (println resource-state)
+          (println "\n")
+          (println production-queue)
           (println "\n\n"))))
     (loop [soonest-end (first production-queue) possibilities (get-build-times (keys (get-construction-options build-order production-queue)) current-time resource-state)]
-      (if (not (empty? possibilities))
+      (if (not (and (empty? production-queue) (empty? possibilities)))
         (if (or (and (not (empty? production-queue)) (empty? possibilities)) (and (not (nil? soonest-end)) (< (first soonest-end) (first (first possibilities)))))
           (let [] 
             (before-nodes (update-resources-end resource-state (last soonest-end) (- (first soonest-end) current-time))
-                          (if (empty? (rest production-queue)) (sorted-map) (rest production-queue))
+                          (dissoc production-queue (first soonest-end))
                           build-order
-                          (first soonest-end)))
+                          (first soonest-end) 
+                          (conj annotated-build-order (str (last soonest-end) " ended @ " (first soonest-end) "\n")))
+            (if (= "refinery" (last soonest-end))
+              (let []
+                (before-nodes (update-resources-refinery-hack resource-state (last soonest-end) (- (first soonest-end) current-time) 2)
+                              (dissoc production-queue (first soonest-end))
+                              build-order
+                              (first soonest-end)
+                              (conj annotated-build-order (str (last soonest-end) "2 ended @ " (first soonest-end) "\n")))
+                (before-nodes (update-resources-refinery-hack resource-state (last soonest-end) (- (first soonest-end) current-time) 3)
+                              (dissoc production-queue (first soonest-end))
+                              build-order
+                              (first soonest-end) 
+                              (conj annotated-build-order (str (last soonest-end) "3 ended @ " (first soonest-end) "\n"))))))
           (let [] 
             (before-nodes (update-resources-start resource-state (last (first possibilities)) (- (first (first possibilities)) current-time)) 
-                          (concat production-queue {(+ (first (first possibilities)) (get (get unit-resource-modifiers (last (first possibilities))) :build-time )) (last (first possibilities))}) 
+                          (conj production-queue {(+ (first (first possibilities)) (get (get unit-resource-modifiers (last (first possibilities))) :build-time )) (last (first possibilities))}) 
                           (conj build-order (last (first possibilities)))
-                          (first (first possibilities)))
-            (recur soonest-end (rest possibilities))))))))
+                          (first (first possibilities))
+                          (conj annotated-build-order (str (last (first possibilities)) " began @ " (first (first possibilities)) "\n")))
+            (recur soonest-end (dissoc possibilities (first (first possibilities))))))))))
 
-(before-nodes {:mineral 50 :gas 0 :mineral-collectors 6 :gas-collectors 0} (sorted-map) [] 0)
+(before-nodes {:mineral 50 :gas 0 :mineral-collectors 6 :gas-collectors 0} (sorted-map) [] 5 [])

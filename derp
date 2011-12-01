@@ -1,0 +1,38 @@
+=================
+[scv began @ 5
+      scv began @ 16.904761904761905
+       scv ended @ 22
+        scv ended @ 33.904761904761905
+         supply-depot began @ 37.523809523809526
+          scv began @ 47.72789115646259
+           scv ended @ 64.72789115646259
+            supply-depot ended @ 70.52380952380952
+             barracks began @ 75.9591836734694
+              refinery began @ 89.35204081632654
+               scv began @ 99.5561224489796
+                scv ended @ 116.5561224489796
+                 refinery3 ended @ 121.35204081632654
+                  barracks ended @ 143.9591836734694
+                   scv began @ 143.9591836734694
+                    factory began @ 147.66921540446276
+                     tech-lab began @ 160.82780269853086
+                      scv ended @ 160.9591836734694
+                       refinery began @ 170.3256805981963
+                        tech-lab ended @ 185.82780269853086
+                         refinery2 ended @ 202.3256805981963
+                          factory ended @ 210.66921540446276
+                           starport began @ 210.66921540446276
+                            starport ended @ 263.66921540446276
+                             cloaking began @ 263.88293639924075
+                              banshee began @ 299.5972221135264
+                              ]
+
+
+[scv scv supply-depot scv barracks refinery scv scv factory tech-lab refinery starport cloaking banshee] 373.88293639924075
+
+
+{:mineral -1.1368683772161603E-13, :gas 11.85215442986717, :mineral-collectors 6, :gas-collectors 5}
+
+
+{359.5972221135264 banshee, 373.88293639924075 cloaking}
+
