@@ -44,7 +44,7 @@
    })
 
 (def unit-resource-modifiers 
-  { "scv"          {:mineral 50   :gas 0    :mineral-collectors 0 :gas-collectors 0  :num-allowed 10 :requirements []                        :build-time 17  }
+  { "scv"          {:mineral 50   :gas 0    :mineral-collectors 0 :gas-collectors 0  :num-allowed 5 :requirements []                        :build-time 17  }
     "refinery"     {:mineral 75   :gas 0    :mineral-collectors 1 :gas-collectors 1  :num-allowed 2  :requirements []                       :build-time 32  }
     "supply-depot" {:mineral 100  :gas 0    :mineral-collectors 1 :gas-collectors 0  :num-allowed 1  :requirements []                       :build-time 33  }
     "barracks"     {:mineral 150  :gas 50   :mineral-collectors 1 :gas-collectors 0  :num-allowed 1  :requirements ["supply-depot"]         :build-time 68  }
@@ -113,20 +113,20 @@
     (sorted-map) units))
 
 (defn update-resources-end [resources unit time-range]
-  {:mineral (+ (get resources :mineral) (* time-range 0.7 (get resources :mineral-collectors)))
+  {:mineral (+ (get resources :mineral) (* time-range 0.68 (get resources :mineral-collectors)))
    :gas (+ (get resources :gas) (* time-range 0.6333 (get resources :gas-collectors)))
    :mineral-collectors (+ (if (= unit "scv") 1 0) (- (+ (get resources :mineral-collectors) (get (get unit-resource-modifiers unit) :mineral-collectors)) (get (get unit-resource-modifiers unit) :gas-collectors)))
    :gas-collectors (+ (get resources :gas-collectors) (get (get unit-resource-modifiers unit) :gas-collectors))})
 
 (defn update-resources-start [resources unit time-range]
-  {:mineral (- (+ (* time-range 0.7 (get resources :mineral-collectors)) (get resources :mineral)) (get unit-mineral-costs unit))
+  {:mineral (- (+ (* time-range 0.68 (get resources :mineral-collectors)) (get resources :mineral)) (get unit-mineral-costs unit))
    :gas (- (+ (get resources :gas) (* time-range 0.6333 (get resources :gas-collectors))) (get unit-gas-costs unit))
    :mineral-collectors (- (get resources :mineral-collectors) (get (get unit-resource-modifiers unit) :mineral-collectors))
    :gas-collectors (get resources :gas-collectors)})
 
 (defn update-resources-refinery-hack [resources unit time-range extra]
   (let [extra-gassers (min (- (get resources :mineral-collectors) 1) extra)]
-    {:mineral (+ (get resources :mineral) (* time-range 0.7 (get resources :mineral-collectors)))
+    {:mineral (+ (get resources :mineral) (* time-range 0.68 (get resources :mineral-collectors)))
      :gas (+ (get resources :gas) (* time-range 0.6333 (get resources :gas-collectors)))
      :mineral-collectors (- (+ (get resources :mineral-collectors) (get (get unit-resource-modifiers unit) :mineral-collectors)) extra-gassers)
      :gas-collectors (+ (get resources :gas-collectors) extra-gassers)}))
@@ -134,9 +134,10 @@
 (def best-time 100000)
 (def best-build-order '())
 (def solutions 0)
+(def nodes 0)
 (defn before-nodes [resource-state production-queue build-order current-time annotated-build-order]
-  (comment (if (= (last (first production-queue)) "banshee")
-    (println "derpderp" (keys (get-construction-options build-order production-queue)))))
+  (comment 20792631)
+  (def nodes (+ 1 nodes))
   (if (and (contains-string? build-order "banshee") (contains-string? build-order "cloaking"))
     (let [final-time (reduce (fn [end-time building]
           (if (or (= (last building) "banshee") (= (last building) "cloaking")) 
@@ -173,6 +174,7 @@
                               build-order
                               (first soonest-end)
                               (conj annotated-build-order (str (last soonest-end) "2 ended @ " (first soonest-end) "\n")))
+
                 (before-nodes (update-resources-refinery-hack resource-state (last soonest-end) (- (first soonest-end) current-time) 3)
                               (dissoc production-queue (first soonest-end))
                               build-order
@@ -184,6 +186,6 @@
                           (conj build-order (last (first possibilities)))
                           (first (first possibilities))
                           (conj annotated-build-order (str (last (first possibilities)) " began @ " (first (first possibilities)) "\n")))
-            (recur soonest-end (dissoc possibilities (first (first possibilities))))))))))
+            (recur soonest-end (dissoc possibilities (first (first possibilities))))))))) solutions)
 
-(before-nodes {:mineral 50 :gas 0 :mineral-collectors 6 :gas-collectors 0} (sorted-map) [] 5 [])
+(println (before-nodes {:mineral 50 :gas 0 :mineral-collectors 6 :gas-collectors 0} (sorted-map) [] 5 []))
